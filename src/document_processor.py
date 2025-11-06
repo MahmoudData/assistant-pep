@@ -127,23 +127,13 @@ def format_documents_context(uploaded_docs: Dict[str, str]) -> str:
     if not uploaded_docs:
         return ""
     
-    context = "\n\n" + "="*70 + "\n"
-    context += "📄 DOCUMENTS DE RÉFÉRENCE FOURNIS PAR LE CHEF DE PROJET\n"
-    context += "="*70 + "\n\n"
-    context += "Le chef de projet a fourni les documents suivants. "
-    context += "Tu DOIS les utiliser comme référence pour répondre avec précision "
-    context += "et éviter d'inventer des informations.\n\n"
+    result = "\n\n## DOCUMENTS DE RÉFÉRENCE FOURNIS PAR LE CHEF DE PROJET\n\n"
+    result += "Le chef de projet a fourni les documents suivants. Tu DOIS les utiliser comme référence pour répondre avec précision et éviter d'inventer des informations.\n\n"
     
     for filename, content in uploaded_docs.items():
-        context += "-" * 70 + "\n"
-        context += f"📎 Document: {filename}\n"
-        context += "-" * 70 + "\n"
-        context += content
-        context += "\n\n"
+        result += f"### 📎 Document: {filename}\n{content}\n\n"
     
-    context += "="*70 + "\n"
-    context += "⚠️ IMPORTANT: Utilise UNIQUEMENT les informations de ces documents "
-    context += "pour les questions concernant ce projet spécifique.\n"
-    context += "="*70 + "\n\n"
+    result += "⚠️ IMPORTANT: Utilise UNIQUEMENT les informations de ces documents pour les questions concernant ce projet spécifique.\n\n"
     
-    return context
+    return result
+
