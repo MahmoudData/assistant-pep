@@ -2,12 +2,12 @@
 import streamlit as st
 import time
 from pathlib import Path
-from llm_handler import create_llm
-from memory_manager import ChatbotGraph
-from pep_extractor import extract_sections_from_history
-from pep_generator import generate_pep
-from system_prompt import SYSTEM_PROMPT
-from document_processor import (
+from src.llm_handler import create_llm
+from src.memory_manager import ChatbotGraph
+from src.pep_extractor import extract_sections_from_history
+from src.pep_generator import generate_pep
+from src.system_prompt import SYSTEM_PROMPT
+from src.document_processor import (
     extract_text_from_file,
     format_documents_context,
 )
@@ -20,7 +20,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-TEMPLATE_PATH = "PEP_type_template.docx"
+TEMPLATE_PATH = "templates/PEP_type_template.docx"
 
 def init_session_state():
     """Initialise l'état de session"""
@@ -149,7 +149,7 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.sidebar.image("parlym_logo.png", width='stretch')
+        st.sidebar.image("assets/parlym_logo.png", width='stretch')
 
         st.write("")
 
