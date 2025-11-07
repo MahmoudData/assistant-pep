@@ -24,7 +24,7 @@ def extract_sections_from_history(messages) -> Dict[str, str]:
     sections = {}  # section_id -> content
     
     # Pattern pour capturer les sections (Markdown)
-    pattern = r"---\s*\n### (\d+(?:\.\d+)*) - ([^\n]+)\n\n(.*?)(?=\n---|\Z)"
+    pattern = r"### (\d+(?:\.\d+)*) - ([^\n]+)\n\n(.*?)(?=\n---|\Z)"
     
     # Trouver toutes les sections (re.finditer retourne dans l'ordre chronologique)
     for match in re.finditer(pattern, full_text, re.DOTALL | re.IGNORECASE):
