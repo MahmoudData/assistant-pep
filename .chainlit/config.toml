@@ -30,8 +30,11 @@ latex = false
 # Automatically tag threads with the current chat profile (if a chat profile is used)
 auto_tag_thread = true
 
-# Authorize users to spontaneously upload files with messages
-spontaneous_file_upload = true
+    [features.spontaneous_file_upload]
+        enabled = true
+        accept = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]
+        max_files = 10
+        max_size_mb = 20
 
     [features.audio]
     # Threshold for audio recording
@@ -47,9 +50,8 @@ spontaneous_file_upload = true
     # Sample rate of the audio
     sample_rate = 44100
 
-    [features.edit_message]
-    # Whether to enable message editing
-    enabled = true
+# Allow users to edit their messages
+edit_message = true
 
 [UI]
 # Name of the app and chatbot.
