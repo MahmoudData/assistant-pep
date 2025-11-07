@@ -105,6 +105,30 @@ class ChatbotGraph:
             if hasattr(chunk, 'content') and chunk.content:
                 yield chunk.content
     
+    async def async_stream_chat(self, user_message, thread_id="default", docs_context: Optional[str] = None):
+        """
+        Version asynchrone du streaming du chat (pour Chainlit)
+
+        Args:
+            user_message: Message de l'utilisateur
+            thread_id: ID du thread de conversation
+            docs_context: Contexte des documents (optionnel)
+        """
+        if docs_context is not None:
+            self.set_docs_context(docs_context)
+
+        from langchain_core.messages import HumanMessage
+
+        # Utiliser astream au lieu de stream
+        async for chunk, metadata in self.app.astream(
+            {"messages": [HumanMessage(content=user_message)]},
+            config={"configurable": {"thread_id": thread_id}},
+            stream_mode="messages"
+        ):
+            # Yield uniquement les chunks du contenu
+            if hasattr(chunk, 'content') and chunk.content:
+                yield chunk.content
+
     def get_history(self, thread_id="default"):
         """
         Récupère l'historique de la conversation

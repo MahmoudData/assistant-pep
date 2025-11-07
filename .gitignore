@@ -15,7 +15,9 @@ build/
 *.pot
 *.mo
 *.env
+.env
 .env.*
+!.env.example
 .venv/
 venv/
 ENV/
@@ -33,6 +35,12 @@ Thumbs.db
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Chainlit
+.chainlit/.auth
+.chainlit/sessions
+.files/
+chainlit.db
 
 # Docx temp
 *.docx~
