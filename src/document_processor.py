@@ -116,24 +116,29 @@ def extract_text_from_file(uploaded_file) -> str:
 
 def format_documents_context(uploaded_docs: Dict[str, str]) -> str:
     """
-    Formate les documents uploadés en un contexte pour le prompt
+    Formate les documents uploadés en contexte structuré avec balises XML
     
     Args:
         uploaded_docs: Dictionnaire {filename: content}
         
     Returns:
-        str: Contexte formaté pour injection dans le system prompt
+        str: Contexte formaté avec balises XML
     """
     if not uploaded_docs:
         return ""
     
     result = "\n\n## DOCUMENTS DE RÉFÉRENCE FOURNIS PAR LE CHEF DE PROJET\n\n"
     result += "Le chef de projet a fourni les documents suivants. Tu DOIS les utiliser comme référence pour répondre avec précision et éviter d'inventer des informations.\n\n"
+    result += "<documents_reference>\n"
     
     for filename, content in uploaded_docs.items():
-        result += f"### 📎 Document: {filename}\n{content}\n\n"
+        result += f"<document>\n"
+        result += f"<filename>{filename}</filename>\n"
+        result += f"<content>\n{content}\n</content>\n"
+        result += f"</document>\n\n"
     
-    result += "⚠️ IMPORTANT: Utilise UNIQUEMENT les informations de ces documents pour les questions concernant ce projet spécifique.\n\n"
+    result += "</documents_reference>\n\n"
+    result += "⚠️ IMPORTANT: Utilise UNIQUEMENT les informations contenues dans les balises <documents_reference> pour les questions concernant ce projet spécifique.\n\n"
     
     return result
 

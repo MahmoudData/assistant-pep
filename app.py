@@ -1,4 +1,4 @@
-"""Assistant PEP - Application Streamlit simplifiée"""
+"""Assistant PEP - Application Streamlit - VERSION CORRIGÉE (thread-safe)"""
 import streamlit as st
 import time
 from pathlib import Path
@@ -38,9 +38,9 @@ def auto_init_chatbot():
         try:
             llm = create_llm()
             
-            # Passer une FONCTION qui sera appelée à chaque message
-            # pour obtenir le prompt avec les documents à jour
-            st.session_state.chatbot = ChatbotGraph(llm, get_full_system_prompt)
+            # ✅ Passer juste le SYSTEM_PROMPT de base
+            # Le contexte des documents sera passé explicitement à chaque message
+            st.session_state.chatbot = ChatbotGraph(llm, SYSTEM_PROMPT)
             
             return True
         except Exception as e:
@@ -49,13 +49,11 @@ def auto_init_chatbot():
             return False
     return True
 
-def get_full_system_prompt():
-    """Construit le system prompt complet avec le contexte des documents"""
-    # Vérifier que uploaded_docs existe avant de l'utiliser
-    if "uploaded_docs" not in st.session_state:
-        return SYSTEM_PROMPT
-    docs_context = format_documents_context(st.session_state.uploaded_docs)
-    return SYSTEM_PROMPT + docs_context
+def get_docs_context():
+    """Récupère le contexte des documents (thread-safe)"""
+    if "uploaded_docs" in st.session_state and st.session_state.uploaded_docs:
+        return format_documents_context(st.session_state.uploaded_docs)
+    return ""
 
 def clear_conversation():
     """Efface la conversation et réinitialise"""
@@ -82,6 +80,7 @@ def handle_file_upload(uploaded_files):
                 
                 # Stocker
                 st.session_state.uploaded_docs[filename] = text_content
+                # Pas de message de succès
 
         except Exception as e:
             st.error(f"❌ Erreur avec {filename}: {str(e)}")
@@ -164,7 +163,9 @@ def main():
         # Traiter les fichiers uploadés
         if uploaded_files:
             handle_file_upload(uploaded_files)
-
+        
+        # ...suppression de l'affichage des documents chargés et de la corbeille...
+        # (aucun affichage ici)
         st.write("")
 
         # Instructions pour la génération du PEP
@@ -186,41 +187,45 @@ def main():
     st.title("📄 Assistant PEP")
     st.markdown("*Assiste les chefs de projet dans la réalisation des PEP*")
     
-    # Afficher l'historique
+    # Afficher l'historique avec avatars personnalisés
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        avatar = msg.get("avatar")
+        if avatar:
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.markdown(msg["content"])
+        else:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
     # Input utilisateur
     if user_input := st.chat_input("Votre message..."):
-        # Ajouter message utilisateur
+        # Ajouter message utilisateur avec avatar
         st.session_state.messages.append({
             "role": "user",
-            "content": user_input
+            "content": user_input,
+            "avatar": "👷‍♂️"
         })
-        
         with st.chat_message("user", avatar="👷‍♂️"):
             st.markdown(user_input)
-        
+        # ✅ SOLUTION : Récupérer le contexte des documents AVANT d'appeler le chatbot
+        docs_context = get_docs_context()
         # Obtenir réponse du bot avec contexte des documents
         try:
             with st.chat_message("assistant", avatar="✨"):
                 message_placeholder = st.empty()
                 full_response = ""
-                
-                # Streaming de la réponse
                 for chunk in st.session_state.chatbot.stream_chat(
                     user_input,
-                    st.session_state.thread_id
+                    st.session_state.thread_id,
+                    docs_context=docs_context
                 ):
                     full_response += chunk
                     message_placeholder.markdown(full_response)
-            
             st.session_state.messages.append({
                 "role": "assistant",
-                "content": full_response
+                "content": full_response,
+                "avatar": "✨"
             })
-        
         except Exception as e:
             st.error(f"❌ Erreur: {str(e)}")
             import traceback
