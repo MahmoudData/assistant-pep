@@ -59,29 +59,31 @@ def clear_conversation():
     """Efface la conversation et réinitialise"""
     st.session_state.messages = []
     st.session_state.thread_id = f"conv_{int(time.time())}"
+    st.session_state.uploaded_docs = {}
     st.rerun()
 
 def handle_file_upload(uploaded_files):
     """Gère l'upload et l'extraction des fichiers"""
     if not uploaded_files:
+        # Si aucun fichier n'est uploadé, vider uploaded_docs
+        st.session_state.uploaded_docs = {}
         return
-    
+
+    # Synchroniser : supprimer les fichiers qui ne sont plus dans uploaded_files
+    current_filenames = set(f.name for f in uploaded_files)
+    docs_to_remove = [fname for fname in st.session_state.uploaded_docs if fname not in current_filenames]
+    for fname in docs_to_remove:
+        del st.session_state.uploaded_docs[fname]
+
+    # Ajouter les nouveaux fichiers uploadés
     for uploaded_file in uploaded_files:
         filename = uploaded_file.name
-        
-        # Vérifier si déjà traité
         if filename in st.session_state.uploaded_docs:
             continue
-        
         try:
             with st.spinner(f"📄 Extraction de {filename}..."):
-                # Extraire le texte
                 text_content = extract_text_from_file(uploaded_file)
-                
-                # Stocker
                 st.session_state.uploaded_docs[filename] = text_content
-                # Pas de message de succès
-
         except Exception as e:
             st.error(f"❌ Erreur avec {filename}: {str(e)}")
 
@@ -160,9 +162,8 @@ def main():
             accept_multiple_files=True,
             help="Ces documents seront utilisés comme référence par l'assistant"
         )
-        # Traiter les fichiers uploadés
-        if uploaded_files:
-            handle_file_upload(uploaded_files)
+        # Synchroniser les fichiers uploadés à chaque affichage, même si aucun fichier n'est présent
+        handle_file_upload(uploaded_files)
         
         # ...suppression de l'affichage des documents chargés et de la corbeille...
         # (aucun affichage ici)
