@@ -81,12 +81,12 @@ def replace_in_paragraph(paragraph, replacements: dict):
         paragraph: Objet paragraph de python-docx
         replacements: Dict {placeholder: valeur}
     """
+    # Remplacement qui conserve le style d'origine (runs)
     for placeholder, value in replacements.items():
-        if placeholder in paragraph.text:
-            paragraph.text = paragraph.text.replace(
-                placeholder,
-                value if value and value.strip() else "[À compléter]"
-            )
+        for run in paragraph.runs:
+            if placeholder in run.text:
+                replacement = value if value and value.strip() else "[À compléter]"
+                run.text = run.text.replace(placeholder, replacement)
 
 
 def generate_pep(template_path: str, sections_data: dict, output_path: str):
