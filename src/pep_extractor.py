@@ -4,34 +4,32 @@ from typing import Dict
 
 def extract_sections_from_history(messages) -> Dict[str, str]:
     """
-    Parse l'historique et extrait les sections au format === SECTION ===
+    Parse l'historique et extrait les sections au format ### X.Y - Titre
     Garde la DERNIÈRE occurrence de chaque section (version la plus récente)
-    
-    Args:
-        messages: Liste des messages de LangGraph
-        
-    Returns:
-        Dict {section_id: content} ex: {"1.1": "Le projet...", "1.2": "..."}
     """
-    # Concaténer tout l'historique de l'assistant
-    full_text = "\n\n".join([
-        msg.content 
-        for msg in messages 
-        if hasattr(msg, 'type') and msg.type in ['ai', 'assistant']
-        and hasattr(msg, 'content')
-    ])
+    # Filtrer UNIQUEMENT les messages qui contiennent des sections formatées
+    section_messages = []
     
-    sections = {}  # section_id -> content
+    for msg in messages:
+        if hasattr(msg, 'type') and msg.type in ['ai', 'assistant'] and hasattr(msg, 'content'):
+            # Vérifier si le message contient au moins une section avec ###
+            if re.search(r"###\s*\d+(?:\.\d+)*\s*-", msg.content):
+                section_messages.append(msg.content)
     
-    # Pattern pour capturer les sections (Markdown)
-    pattern = r"### (\d+(?:\.\d+)*) - ([^\n]+)\n\n(.*?)(?=\n---|\Z)"
+    # Concaténer UNIQUEMENT les messages contenant des sections
+    full_text = "\n\n".join(section_messages)
     
-    # Trouver toutes les sections (re.finditer retourne dans l'ordre chronologique)
-    for match in re.finditer(pattern, full_text, re.DOTALL | re.IGNORECASE):
+    sections = {}
+    
+    # Pattern pour capturer les sections
+    pattern = r"###\s*(\d+(?:\.\d+)*)\s*-\s*[^\n]+\n\n(.*?)(?=\n###|\n---|\Z)"
+    
+    for match in re.finditer(pattern, full_text, re.DOTALL):
         section_id = match.group(1).strip()
-        content = match.group(3).strip()
-        # Écraser avec la dernière version (la plus récente)
-        sections[section_id] = content
+        content = match.group(2).strip()
+        
+        if content:
+            sections[section_id] = content
     
     return sections
 

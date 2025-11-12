@@ -9,19 +9,19 @@ def extract_text_from_pdf(file) -> str:
     Extrait le texte d'un fichier PDF
     
     Args:
-        file: Objet fichier (file-like object avec méthode .read())
+        file: Objet fichier Chainlit avec attribut .path
         
     Returns:
         str: Texte extrait du PDF
     """
     try:
-        
-        # Lire le PDF depuis le buffer
-        pdf_bytes = file.read()
+        # Pour Chainlit, on utilise le path
+        with open(file.path, 'rb') as f:
+            pdf_bytes = f.read()
+            
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         
         text_content = []
-        
         for page_num in range(pdf_document.page_count):
             page = pdf_document[page_num]
             text_content.append(page.get_text())
@@ -40,7 +40,7 @@ def extract_text_from_docx(file) -> str:
     Extrait le texte d'un fichier DOCX
     
     Args:
-        file: Objet fichier (file-like object avec méthode .read())
+        file: Objet fichier Chainlit avec attribut .path
         
     Returns:
         str: Texte extrait du DOCX
@@ -48,8 +48,8 @@ def extract_text_from_docx(file) -> str:
     try:
         from docx import Document
         
-        # Lire le DOCX depuis le buffer
-        doc = Document(io.BytesIO(file.read()))
+        # Pour Chainlit, on utilise le path
+        doc = Document(file.path)
         
         text_content = []
         
@@ -76,20 +76,27 @@ def extract_text_from_txt(file) -> str:
     Extrait le texte d'un fichier TXT
     
     Args:
-        file: Objet fichier (file-like object avec méthode .read())
+        file: Objet fichier Chainlit avec attribut .path
         
     Returns:
         str: Texte extrait du TXT
     """
     try:
+        # Pour Chainlit, on utilise le path
+        with open(file.path, 'rb') as f:
+            content = f.read()
+        
         # Essayer UTF-8 en premier
-        text = file.read().decode('utf-8')
+        try:
+            text = content.decode('utf-8')
+        except UnicodeDecodeError:
+            # Fallback sur latin-1
+            text = content.decode('latin-1', errors='ignore')
+        
         return text.strip()
-    except UnicodeDecodeError:
-        # Fallback sur latin-1
-        file.seek(0)
-        text = file.read().decode('latin-1')
-        return text.strip()
+    
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'extraction du TXT: {str(e)}")
 
 
 def extract_text_from_file(uploaded_file) -> str:
@@ -97,21 +104,33 @@ def extract_text_from_file(uploaded_file) -> str:
     Extrait le texte d'un fichier selon son type
     
     Args:
-        uploaded_file: Objet fichier avec attribut .type et méthode .read()
+        uploaded_file: Objet fichier Chainlit avec attributs .mime, .name et .path
         
     Returns:
         str: Texte extrait
     """
-    file_type = uploaded_file.type
+    # Chainlit utilise l'attribut .mime (pas .type)
+    file_mime = getattr(uploaded_file, 'mime', None)
+    file_name = uploaded_file.name.lower()
     
-    if file_type == "application/pdf":
+    # Si mime n'est pas disponible ou est générique, détecter depuis l'extension
+    if not file_mime or file_mime == "application/octet-stream":
+        if file_name.endswith('.pdf'):
+            file_mime = "application/pdf"
+        elif file_name.endswith('.docx'):
+            file_mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif file_name.endswith('.txt'):
+            file_mime = "text/plain"
+    
+    # Router vers la fonction appropriée
+    if file_mime == "application/pdf":
         return extract_text_from_pdf(uploaded_file)
-    elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    elif file_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         return extract_text_from_docx(uploaded_file)
-    elif file_type == "text/plain":
+    elif file_mime == "text/plain":
         return extract_text_from_txt(uploaded_file)
     else:
-        raise ValueError(f"Type de fichier non supporté: {file_type}")
+        raise ValueError(f"Type de fichier non supporté: {file_mime} (fichier: {uploaded_file.name})")
 
 
 def format_documents_context(uploaded_docs: Dict[str, str]) -> str:
@@ -141,4 +160,3 @@ def format_documents_context(uploaded_docs: Dict[str, str]) -> str:
     result += "⚠️ IMPORTANT: Utilise UNIQUEMENT les informations contenues dans les balises <documents_reference> pour les questions concernant ce projet spécifique.\n\n"
     
     return result
-
